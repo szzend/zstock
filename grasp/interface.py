@@ -1,0 +1,46 @@
+#coding=utf-8
+'''
+此模块用于对外的接口调用
+'''
+from pandas import DataFrame
+from .tt import tt_get_MX
+#成交明细需保留的列：[成交时间，成交价格，成交数量(手)，成交金额(元)]
+GRASP_MX_COLUMNS=['time','price','volumes','AMT'] 
+
+def _wrap_(stockid,date,market):
+    '''
+    包装查询参数，以应对不同的实现
+    参数:   stockid:string(股票代码，如000038)
+            date:string(交易日期，如20180308)
+            market:string(该股票所属市场，'sz'代表深圳,'sh'代表上海)
+    返回：一个元组:包装后的stockid及date（stockid,date)
+    '''
+    #TT实现
+    return market+stockid,date
+
+def get_df_MX(stockid,date,market,source=None):
+    '''
+    获取某支股票分笔明细数据 (由调用者保证股票代码及日期有效)
+    参数:   stockid:string(股票代码，如000038)
+            date:string(交易日期，格式：yyyymmdd,如20180308)
+            market:string(该股票所属市场，'sz'代表深圳,'sh'代表上海)
+    返回：  df:DataFrame(该数据包含列为:GRASP_MX_COLUMNS常量所指定的列)
+            如未获取数据则返回None
+    '''
+    symbol,date=_wrap_(stockid,date,market)
+    try:
+        d=tt_get_MX(symbol,date)
+        if d.size==0:
+            d=None
+    except:
+        return None
+    return d
+
+
+def get_df_HFQ():
+    '''
+    获取某支股票后复权交易数据
+    参数：
+    返回：
+    '''
+    pass
