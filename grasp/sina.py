@@ -44,10 +44,8 @@ def sina_get_FQ(stockid, Y, Q):
 
 def sina_get_SS(stockid):
     '''
-    获取某支股票后复权交易数据(按季度每日成交数据) 
-    参数:   symbol:string(股票代码，如000038)
-            Y:int(交易年份，格式：yyyy)
-            Q:int(季度{1,2,3,4})
+    获取股票股本结构数据 
+    参数:   stockid:string(股票代码，如000038)
     返回：  df:DataFrame
            columns: ['变动原因', '总股本', '流通A股', '高管股', '限售A股', '流通B股', '限售B股', '流通H股',
           '国家股', '国有法人股', '境内法人股', '境内发起人股', '募集法人股', '一般法人股', '战略投资者持股',
@@ -73,7 +71,7 @@ def sina_get_SS(stockid):
         t = [_index[i] in t[i] for i in range(len(_index))]
         return all(t)
 
-    url = _URL.format(symbol=id2code(stockid, 1))
+    url = _URL.format(symbol=id2code(stockid, 0))
     import random
     r = requests.get(url, headers=random.choice(headers))
     r.encoding = 'gb2312'
