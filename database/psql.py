@@ -34,8 +34,9 @@ def initdb(conn):
             profile text,
             business text,
             founddate date,
-            ipodate date
-        );'''
+            ipodate date,
+            updatedate date);
+    '''
     #日复权数据分区表
     sq3='''
         create table daydatafq(
@@ -48,9 +49,9 @@ def initdb(conn):
             volume bigint not null,
             amount bigint not null,
             factor float not null,
-            turnoverratio float
-        ) partition by range(tdate);
-        '''
+            turnoverratio float)
+        partition by range(tdate);
+    '''
     #创建日复权数据各分区。索引待创建。。。
     sq31='''
         create table y2008_y2011 partition of daydatafq
@@ -65,10 +66,10 @@ def initdb(conn):
         create table y2018_y2020 partition of daydatafq
         for values from ('2018-01-01') to ('2020-12-31');
 
-        '''
+    '''
     
     #股本结构表
-    sq3='''
+    sq4='''
         create table SS(
             code text primary key,
             changedate date,
@@ -82,3 +83,62 @@ def initdb(conn):
             updatedate date
         );
     '''
+    #板块分类资料表
+    sq5='''
+    create table catalog(
+            node text primary key,
+            name text,
+            catalog text,
+            updatedate date
+        );
+    '''
+    #股票分板块表
+    sq6='''
+    create table code2catalog(
+            node text references catalog (node),
+            code text references stocka (code),
+            updatedate date,
+            primary key (node,code)
+        );
+    '''
+    #成交明细表
+    sq7='''
+    create table sz_detail(
+            code text,
+            tdate date,
+            time time,
+            price float,
+            volume int,
+            amount int,
+            bs text)
+        partition by range(tdate);
+    '''
+    sq71='''
+    create table sz_ym201803 partition of sz_detail
+    for values from ('2018-03-01') to ('2018-03-31');
+
+    create table sz_ym201804 partition of sz_detail
+    for values from ('2018-04-01') to ('2018-04-30');
+    '''
+    sq8='''
+    create table sh_detail(
+            code text,
+            tdate date,
+            time time,
+            price float,
+            volume int,
+            amount int,
+            bs text)
+        partition by range(tdate);
+    '''
+    sq81='''
+    create table sh_ym201803 partition of sh_detail
+    for values from ('2018-03-01') to ('2018-03-31');
+
+    create table sh_ym201804 partition of sh_detail
+    for values from ('2018-04-01') to ('2018-04-30');
+    '''
+    sql=','.join([sq1,sq2,sq3,sq31,sq4,sq5,sq6,sq7,sq71,sq8,sq81])
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(sql)
