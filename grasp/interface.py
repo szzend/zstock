@@ -18,26 +18,46 @@ def get_stocka(source='sina'):
 def get_profile(stockid,source='em'):
     """
     获取公司基本资料
-    参数: source={em,sina,tt} 选取抓取的数据源
-          stockid 为股票代码列表
-    返回:
+    参数: stockid 为股票代码或者代码列表或元组
+          source={em,sina,tt} 选取抓取的数据源
+    返回: list([code,name,company,plate,market,industry,area,capital,
+            profile,business,founddate,ipodate])
     """
     #目前仅实现了em源
     result=[]
+    if isinstance(stockid,list) or isinstance(stockid,tuple):
+        pass
+    else:
+        stockid=[stockid]
     for code in stockid:
         result.append(list(em_get_profile(code)))
 
+def get_HFQ(stockid,startdate,enddate,source='sina'):
+    """
+    获取时间段内后复权数据
+    参数: stockid(string) 为股票代码或者代码列表或元组
+          startdate(string) 开始日期,格式:yyyymmdd或yyyy-mm-dd
+          enddate(string) 截止日期,格式:yyyymmdd或yyyy-mm-dd
+          source={em,sina,tt} 选取抓取的数据源
+    """
+    if isinstance(stockid,list) or isinstance(stockid,tuple):
+        pass
+    else:
+        stockid=[stockid]
+    import time
+    startdate=time.strptime
 
-def _wrap_(stockid,date,market):
-    '''
-    包装查询参数，以应对不同的实现
-    参数:   stockid:string(股票代码，如000038)
-            date:string(交易日期，如20180308)
-            market:string(该股票所属市场，'sz'代表深圳,'sh'代表上海)
-    返回：一个元组:包装后的stockid及date（stockid,date)
-    '''
-    #TT实现
-    return market+stockid,date
+
+# def _wrap_(stockid,date,market):
+#     '''
+#     包装查询参数，以应对不同的实现
+#     参数:   stockid:string(股票代码，如000038)
+#             date:string(交易日期，如20180308)
+#             market:string(该股票所属市场，'sz'代表深圳,'sh'代表上海)
+#     返回：一个元组:包装后的stockid及date（stockid,date)
+#     '''
+#     #TT实现
+#     return market+stockid,date
 
 # def get_df_MX(stockid,date,market,source=None):
 #     '''
