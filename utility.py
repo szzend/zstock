@@ -5,11 +5,16 @@ class DateHelper():
     """
     """
     def __init__(self,strdate):
+        if isinstance(strdate,datetime.date):
+            self.__date=strdate
         rx=re.compile(r'(?P<y>\d{4})([-/]?)(?P<m>\d{2})\2(?P<d>\d{2})')
         rlt=rx.match(strdate)
         if not rlt:
-            raise ValueError('{}不是有效日期格式'.format(strdate))
+            raise ValueError('{}不是有效日期格式字符串'.format(strdate))
         self.__date=datetime.date(int(rlt.group('y')),int(rlt.group('m')),int(rlt.group('d')))
+    @property
+    def date(self):
+        return self.__date
     @property
     def quarter(self):
        j=[0,1,1,1,2,2,2,3,3,3,4,4,4]

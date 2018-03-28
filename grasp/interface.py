@@ -3,8 +3,9 @@
 此模块用于对外的接口调用
 '''
 from pandas import DataFrame
-from .sina import *
-from .em import *
+from ..utility import DateHelper
+from .sina import sina_get_FQ,sina_get_datac
+from .em import em_get_profile
 def get_stocka(source='sina'):
     """
     获取沪深A股最后交易日的代码
@@ -44,8 +45,10 @@ def get_HFQ(stockid,startdate,enddate,source='sina'):
         pass
     else:
         stockid=[stockid]
-    import time
-    startdate=time.strptime
+    startdate=DateHelper(startdate)
+    enddate=DateHelper(enddate)
+    #仅实现sina源
+
 
 
 # def _wrap_(stockid,date,market):
