@@ -27,7 +27,7 @@ def sina_get_FQ(stockid, Y, Q):
     '''
     # 后复权历史交易数据,symbol形如sz000068,Y为年份yyyy,Q为季度{1,2,3,4}
     _URL = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vMS_FuQuanMarketHistory/stockid/{symbol}.phtml?year={Y}&jidu={Q}'
-    url = _URL.format(symbol=id2code(stockid, 1), Y=Y, Q=Q)
+    url = _URL.format(symbol=id2code(stockid,1), Y=Y, Q=Q)
     import random
     r = requests.get(url, headers=random.choice(headers))
     r.encoding = 'gb2312'

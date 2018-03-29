@@ -8,7 +8,7 @@ __all__=[]
 
 
 stockwords={
-        'date':'日期','time':'时间','ticktime':'时间', 'price':'成交价格','trade':'成交价格',
+        'date':'日期', 'tdate':'日期','time':'时间','ticktime':'时间', 'price':'成交价格','trade':'成交价格',
         'volume':'成交量(股)','amount':'成交额(元)','pb':'市净率','mktcap':'总市值(万元)',
         'nmc':'流通市值(万元)','turnoverratio':'换手率','pricechange':'价格变动','buy':'现买价',
         'sell':'现卖价','code':'股票代码','name':'名称','open':'开盘','close':'收盘','high':'最高',

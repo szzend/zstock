@@ -2,8 +2,7 @@
 '''
 此模块用于对外的接口调用
 '''
-from pandas import DataFrame
-from ..utility import DateHelper
+import pandas as pd
 from .sina import sina_get_FQ,sina_get_datac
 from .em import em_get_profile
 def get_stocka(source='sina'):
@@ -32,6 +31,7 @@ def get_profile(stockid,source='em'):
         stockid=[stockid]
     for code in stockid:
         result.append(list(em_get_profile(code)))
+    return result
 
 def get_HFQ(stockid,startdate,enddate,source='sina'):
     """
@@ -40,14 +40,31 @@ def get_HFQ(stockid,startdate,enddate,source='sina'):
           startdate(string) 开始日期,格式:yyyymmdd或yyyy-mm-dd
           enddate(string) 截止日期,格式:yyyymmdd或yyyy-mm-dd
           source={em,sina,tt} 选取抓取的数据源
+    返回: DataFrame columns=[code,open,high,close,low,volume,amount,factor]
+                    index=[tdate]
     """
+    _columns=['code','open','high','close','low','volume','amount','factor']
     if isinstance(stockid,list) or isinstance(stockid,tuple):
         pass
     else:
         stockid=[stockid]
-    startdate=DateHelper(startdate)
-    enddate=DateHelper(enddate)
     #仅实现sina源
+    result=[]
+    drg=list(pd.date_range(startdate,enddate))
+    startdate=str(drg[0])
+    enddate=str(drg[-1])
+    drg=set([(d.year,d.quarter) for d in drg])
+    for code in stockid:
+        tmp=[]
+        for c in drg:
+            tmp.append(sina_get_FQ(code,c[0],c[1]))
+        df=pd.concat(tmp)
+        df.insert(0,'code',code)
+        df.index=pd.to_datetime(df.index)
+        result.append(df)
+    result=pd.concat(result)
+    result.columns=_columns
+    return result.sort_index().loc[startdate:enddate]
 
 
 
@@ -81,10 +98,3 @@ def get_HFQ(stockid,startdate,enddate,source='sina'):
 #     return d
 
 
-def get_df_HFQ():
-    '''
-    获取某支股票后复权交易数据
-    参数：
-    返回：
-    '''
-    pass

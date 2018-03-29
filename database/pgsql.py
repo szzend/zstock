@@ -40,8 +40,8 @@ def initdb(conn):
     #日复权数据分区表
     sq3='''
         create table daydatafq(
-            code text not null,
             tdate date not null,
+            code text not null,
             open float not null,
             high float not null,
             close float not null,
