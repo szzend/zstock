@@ -20,7 +20,8 @@ def tt_get_MX_x(stockid,date):
     #用于异常返回信息
     _msg1='{}({},{})执行结果错误:{}'
     _msg2='{}({},{})执行结果错误,数据结构已改变,要求列为:{}'
-    _columns=['成交时间','成交价格','成交量(手)','成交额(元)','性质']
+    _names=['成交时间','成交价格','成交量(手)','成交额(元)','性质']
+    _columns=['time','price','volume','amount','bs']
     url=_URL.format(symbol=id2code(stockid,1),date=date)
     #原始列为:成交时间	成交价格	价格变动	成交量(手)	成交额(元)	性质
     #选择列读入
@@ -28,10 +29,11 @@ def tt_get_MX_x(stockid,date):
         df=pd.read_table(url,sep='\t',usecols=[0,1,3,4,5],encoding='gbk')
     except ValueError as err:
         raise ValueError(_msg1.format(tt_get_MX_x.__name__,stockid,date,str(err))) from err
-    if list(df.columns)==_columns:
+    if list(df.columns)==_names:
+        df.columns=_columns
         return df
     else:
-        raise ValueError(_msg2.format(tt_get_MX_x.__name__,stockid,date,str(_columns)))
+        raise ValueError(_msg2.format(tt_get_MX_x.__name__,stockid,date,str(_names)))
 
 
 

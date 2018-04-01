@@ -4,11 +4,15 @@
 此包用于获取股票数据
 公用接口在interface
 """
+import time
+from requests import Session
+from requests.adapters import HTTPAdapter
+
 __all__=[]
 
 
 stockwords={
-        'date':'日期', 'tdate':'日期','time':'时间','ticktime':'时间', 'price':'成交价格','trade':'成交价格',
+        'date':'日期', 'tdate':'日期','time':'时间','ticktime':'时间', 'tdatetime':'日期时间','price':'成交价格','trade':'成交价格',
         'volume':'成交量(股)','amount':'成交额(元)','pb':'市净率','mktcap':'总市值(万元)',
         'nmc':'流通市值(万元)','turnoverratio':'换手率','pricechange':'价格变动','buy':'现买价',
         'sell':'现卖价','code':'股票代码','name':'名称','open':'开盘','close':'收盘','high':'最高',
@@ -48,6 +52,25 @@ def id2code(id,type):
         if not r:
                 raise ValueError('({0},{1})非预期转换.'.format(id,type))
         return r
+
+class grasp():
+        """
+        封装requests会话类,用于处理超时及抓取频率
+        """
+        def __init__(self,max_retries=3):
+                self.__session=Session()
+                self.__session.mount('http://',HTTPAdapter(max_retries=max_retries))
+                self.__session.mount('https://',HTTPAdapter(max_retries=max_retries))
+        
+        def get(self,url,timeout=0.2,interval=0.03,**kwargs):
+                time.sleep(interval)
+                r=self.__session.get(url,timeout=timeout,**kwargs)
+                return r
+        
+
+        def close(self):
+                self.__session.close()
+
 
 
 #用于模拟浏览器

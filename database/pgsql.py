@@ -104,14 +104,13 @@ def initdb(conn):
     #成交明细表
     sq7='''
     create table sz_detail(
+            tdatetime timestamp,
             code text,
-            tdate date,
-            time time,
             price float,
             volume int,
             amount int,
             bs text)
-        partition by range(tdate);
+        partition by range(tdatetime);
     '''
     sq71='''
     create table sz_ym201803 partition of sz_detail
@@ -122,14 +121,13 @@ def initdb(conn):
     '''
     sq8='''
     create table sh_detail(
+            tdatetime timestamp,
             code text,
-            tdate date,
-            time time,
             price float,
             volume int,
             amount int,
             bs text)
-        partition by range(tdate);
+        partition by range(tdatetime);
     '''
     sq81='''
     create table sh_ym201803 partition of sh_detail
