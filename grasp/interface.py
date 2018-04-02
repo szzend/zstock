@@ -88,7 +88,7 @@ def get_MX_excel(stockid,startdate,enddate,source='tt'):
     for code in stockid:
         lt=[]
         for tdate in drg:
-            rt=tt_get_MX_x(code,tdate)
+            rt=tt_get_MX_x(code,tdate.strip())
             rt.index=rt['time'].apply(lambda x:pd.to_datetime(tdate+x))
             lt.append(rt)
         df=pd.concat(lt)

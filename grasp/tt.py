@@ -5,7 +5,8 @@
 import pandas as pd
 import requests
 import re
-from . import id2code
+from io import BytesIO
+from . import id2code,grasp
 
 
 def tt_get_MX_x(stockid,date):
@@ -26,14 +27,19 @@ def tt_get_MX_x(stockid,date):
     #原始列为:成交时间	成交价格	价格变动	成交量(手)	成交额(元)	性质
     #选择列读入
     try:
-        df=pd.read_table(url,sep='\t',usecols=[0,1,3,4,5],encoding='gbk')
+        g=grasp()
+        r=g.get(url)
+        assert r.ok
+        df=pd.read_table(BytesIO(r.content),sep='\t',usecols=[0,1,3,4,5],encoding='gbk')
     except ValueError as err:
-        raise ValueError(_msg1.format(tt_get_MX_x.__name__,stockid,date,str(err))) from err
+        print(stockid,date,url,err)
+        #raise ValueError(_msg1.format(tt_get_MX_x.__name__,stockid,date,str(err))) from err
     if list(df.columns)==_names:
         df.columns=_columns
         return df
     else:
-        raise ValueError(_msg2.format(tt_get_MX_x.__name__,stockid,date,str(_names)))
+        return None
+        #raise ValueError(_msg2.format(tt_get_MX_x.__name__,stockid,date,str(_names)))
 
 
 
