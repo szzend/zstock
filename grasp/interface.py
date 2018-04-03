@@ -3,12 +3,13 @@
 此模块用于对外的接口调用
 '''
 import pandas as pd
-from .sina import sina_get_FQ,sina_get_datac
+from requests.exceptions import ConnectTimeout
+from .sina import sina_get_FQ,sina_get_datac,sina_get_catalog,sina_get_SS
 from .em import em_get_profile
 from .tt import tt_get_MX_x
 def get_stocka(source='sina'):
     """
-    获取沪深A股最后交易日的代码
+    获取沪深A股最后交易日的代码清单
     参数: source={em,sina,tt} 选取抓取的数据源
     返回: list(string) 股票代码
     """
@@ -74,8 +75,9 @@ def get_MX_excel(stockid,startdate,enddate,source='tt'):
           startdate(string) 开始日期,格式:yyyymmdd或yyyy-mm-dd
           enddate(string) 截止日期,格式:yyyymmdd或yyyy-mm-dd
           source={em,sina,tt} 选取抓取的数据源
-    返回: DataFrame columns=[code,open,high,close,low,volume,amount,factor]
+    返回: 一个DataFrame columns=[code,open,high,close,low,volume,amount,factor]
                     index=[tdate]
+          及一个包含数据抓取失败的列表
     """
     #仅实现了tt源
     if isinstance(stockid,list) or isinstance(stockid,tuple):
@@ -85,46 +87,68 @@ def get_MX_excel(stockid,startdate,enddate,source='tt'):
     drg=pd.date_range(startdate,enddate,freq='B')
     drg=[d.strftime('%Y%m%d ') for d in drg]
     result=[]
+    failed=[]
     for code in stockid:
         lt=[]
         for tdate in drg:
-            rt=tt_get_MX_x(code,tdate.strip())
-            rt.index=rt['time'].apply(lambda x:pd.to_datetime(tdate+x))
-            lt.append(rt)
+            try:
+                rt=tt_get_MX_x(code,tdate.strip()) #该实现可能返回None或者触发超时异常
+                if not (rt is None):
+                    rt.index=rt['time'].apply(lambda x:pd.to_datetime(tdate+x))
+                    lt.append(rt)
+            except ConnectTimeout:
+                failed.append((code,tdate))
         df=pd.concat(lt)
         df.drop('time',axis=1)
         df.insert(0,'code',code)
         result.append(df)
+    return pd.concat(result),failed
+
+def get_catalog(source='sina'):
+    """
+    获取板块数据
+    返回: DataFrame columns=['node','name','catalog','updatedate']
+    """
+    #仅实现了新浪分类
+    _columns=['node','name','catalog','updatedate']
+    result=[]
+    r=sina_get_catalog()
+    for k in r:
+        df=pd.DataFrame()
+        df['name']=r[k].index
+        df.index=list(r[k]['node'])
+        df['catalog']=k
+        df['updatedate']=pd.Timestamp.today().strftime('%Y-%m-%d')
+        result.append(df)
     return pd.concat(result)
 
-
-# def _wrap_(stockid,date,market):
-#     '''
-#     包装查询参数，以应对不同的实现
-#     参数:   stockid:string(股票代码，如000038)
-#             date:string(交易日期，如20180308)
-#             market:string(该股票所属市场，'sz'代表深圳,'sh'代表上海)
-#     返回：一个元组:包装后的stockid及date（stockid,date)
-#     '''
-#     #TT实现
-#     return market+stockid,date
-
-# def get_df_MX(stockid,date,market,source=None):
-#     '''
-#     获取某支股票分笔明细数据 (由调用者保证股票代码及日期有效)
-#     参数:   stockid:string(股票代码，如000038)
-#             date:string(交易日期，格式：yyyymmdd,如20180308)
-#             market:string(该股票所属市场，'sz'代表深圳,'sh'代表上海)
-#     返回：  df:DataFrame(该数据包含列为:GRASP_MX_COLUMNS常量所指定的列)
-#             如未获取数据则返回None
-#     '''
-#     symbol,date=_wrap_(stockid,date,market)
-#     try:
-#         d=tt_get_MX(symbol,date)
-#         if d.size==0:
-#             d=None
-#     except:
-#         return None
-#     return d
+def get_SS(stockid,source='sina'):
+    """
+    获取股本结构变化信息
+    参数:   stockid(string)股票id
+    返回:
+    """
+    dic={'万股':lambda x:float(x)*10000}
+    def w2d(x):
+        def unknown(x):
+            raise ValueError('未知单位.')
+        if x=='--':
+            return 0
+        d,w=x.split()
+        dic.get(w,unknown)(d)
 
 
+    _columns=['code','changedate','changelog','totalqt','ltaqt','limita','ltbqt','limitb','lthqt','updatedate']
+    r=sina_get_SS(stockid)
+    df=pd.DataFrame()
+    df['changelog']=r['变动原因']
+    df['totalqt']=r['总股本'].apply(w2d)
+    df['ltaqt']=r['流通A股'].apply(w2d)
+    df['limita']=r['限售A股'].apply(w2d)
+    df['ltbqt']=r['流通B股'].apply(w2d)
+    df['limitb']=r['限售B股'].apply(w2d)
+    df['lthqt']=r['流通H股'].apply(w2d)
+    df['updatedate']=pd.Timestamp.today().strftime('%Y-%m-%d')
+    df.insert(0,'changedate',r.index)
+    df.insert(0,'code',stockid)
+    return df

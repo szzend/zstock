@@ -15,6 +15,7 @@ def tt_get_MX_x(stockid,date):
     参数:   stockid:string(股票代码，如000038)
             date:string(交易日期，格式：yyyymmdd,如20180308)
     返回：  返回DataFrame(该数据包含列为:['成交时间','成交价格','成交量(手)','成交额(元)','性质'])
+            该实现可能返回None或者触发超时异常
     '''
     #结果为excel表(实际格式为csv格式)，symbol形如sz000038,date形如20180308
     _URL='http://stock.gtimg.cn/data/index.php?appn=detail&action=download&c={symbol}&d={date}'
@@ -26,21 +27,18 @@ def tt_get_MX_x(stockid,date):
     url=_URL.format(symbol=id2code(stockid,1),date=date)
     #原始列为:成交时间	成交价格	价格变动	成交量(手)	成交额(元)	性质
     #选择列读入
-    try:
-        g=grasp()
-        r=g.get(url)
-        assert r.ok
+    g=grasp()
+    r=g.get(url)
+    assert r.ok
+    if r.headers['Content-Type']=='application/x-msexcel':
         df=pd.read_table(BytesIO(r.content),sep='\t',usecols=[0,1,3,4,5],encoding='gbk')
-    except ValueError as err:
-        print(stockid,date,url,err)
-        #raise ValueError(_msg1.format(tt_get_MX_x.__name__,stockid,date,str(err))) from err
-    if list(df.columns)==_names:
-        df.columns=_columns
-        return df
-    else:
-        return None
-        #raise ValueError(_msg2.format(tt_get_MX_x.__name__,stockid,date,str(_names)))
-
+        if list(df.columns)==_names:
+            df.columns=_columns
+            if df.size:
+                return df
+        else:
+            raise ValueError('tt源明细数据格式已改变..')
+    
 
 
 def tt_get_trade(stockid):

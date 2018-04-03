@@ -64,7 +64,9 @@ class grasp():
         
         def get(self,url,timeout=0.2,interval=0.03,**kwargs):
                 time.sleep(interval)
-                r=self.__session.get(url,timeout=timeout,**kwargs)
+                r=self.__session.get(url,timeout=(timeout,15),**kwargs)
+                #print(r)
+                #print(r.url)
                 return r
         
 
