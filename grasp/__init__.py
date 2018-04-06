@@ -57,7 +57,7 @@ class grasp():
         """
         封装requests会话类,用于处理超时及抓取频率
         """
-        def __init__(self,max_retries=3):
+        def __init__(self,max_retries=3,useproxy=False):
                 self.__session=Session()
                 self.__session.mount('http://',HTTPAdapter(max_retries=max_retries))
                 self.__session.mount('https://',HTTPAdapter(max_retries=max_retries))

@@ -7,7 +7,7 @@ from lxml import etree
 import pandas as pd
 import re
 import json
-from . import headers, id2code,w2d
+from . import headers,id2code,w2d,grasp
 
 
 # 流通股份数变动数据
@@ -204,9 +204,10 @@ def sina_get_datac(node, wt=None):
         df.astype(dtypes)
         df.columns=mindex
         return df
-
+    g=grasp()
     curl = _cURL.format(node=node)
-    r = requests.get(curl).text
+    r = g.get(curl).text
+    print(node)
     c = int(re.findall(r'String\("(\d+)"\)', r)[0])
     pgs, _ = divmod(c, _num)
     pgs = pgs+1 if _ else pgs
@@ -218,7 +219,7 @@ def sina_get_datac(node, wt=None):
     w = wdatas if wt else wcodes
     for i in range(1, pgs+1):
         url = _URL.format(page=i, node=node, num=_num)
-        r = requests.get(url, headers=random.choice(headers))
+        r = g.get(url, headers=random.choice(headers))
         r.encoding = 'gb2312'
         r = r.text
         rt.extend(f(r))

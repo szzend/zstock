@@ -122,20 +122,46 @@ def get_catalog(source='sina'):
         result.append(df)
     return pd.concat(result)
 
+def get_code2catalog(catalog=None,node=None,source='sina'):
+    """
+    """
+    lt=[]
+    rt=[]
+    if node:
+        return sina_get_datac(node)
+    else:
+        dic=sina_get_catalog()
+        if catalog:
+            df=dic.get(catalog)
+        else:
+            for k in dic:
+                lt.append(dic.get(k))
+            df=pd.concat(lt)
+        for i in df['node'].values:
+            rt.append(sina_get_datac(i))
+        return pd.concat(rt)
+
+
+
+
+
+
+
 def get_SS(stockid,source='sina'):
     """
     获取股本结构变化信息
     参数:   stockid(string)股票id
-    返回:
+    返回:   DataFrame columns=['code','changedate','changelog','totalqt',
+            'ltaqt','limita','ltbqt','limitb','lthqt','updatedate']
     """
-    dic={'万股':lambda x:float(x)*10000}
+    dic={'万股':lambda x:int(float(x)*10000)}
     def w2d(x):
         def unknown(x):
             raise ValueError('未知单位.')
         if x=='--':
             return 0
         d,w=x.split()
-        dic.get(w,unknown)(d)
+        return dic.get(w,unknown)(d)
 
 
     _columns=['code','changedate','changelog','totalqt','ltaqt','limita','ltbqt','limitb','lthqt','updatedate']
