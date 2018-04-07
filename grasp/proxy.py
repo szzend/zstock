@@ -28,20 +28,24 @@ class proxypool():
         self.__pool=set()
 
     def test(self):
-        def t(q,ok,bad):
-            pass
+        def t(p):
+            """
+            返回结果元组,第一位为1或0,1代表可用,0代表不可用;第二位为协议及IP
+            """
+            #self.__session.get()
 
-        inqueue=Queue()
-        okqueue=Queue()
-        badqueue=Queue()
+
         lt=list(self.__untestpool-self.__pool-self.__badpool)
-        for i in lt:
-            inqueue.put(i)
-        with Pool(4) as p:
-            while not inqueue.empty:
-                rs=[p.apply_async(t,(inqueue,okqueue,badqueue))]
-            for r in rs:
-                r.get()
+        result=[]
+        with Pool() as pool:
+            result=[pool.apply_async(t,(p,)) for p in lt] 
+            result=[r.get() for r in result]
+        for r in result:
+            b,p=r
+            if b:
+                self.__pool.add(p)
+            else:
+                self.__badpool.add(p)
 
 
     def buildxc(self):
@@ -59,7 +63,8 @@ class proxypool():
         result=pd.concat(result)[['类型','IP地址','端口']].values
         for lt in result:
             pool.add('{}://{}:{}'.format(lt[0].lower(),lt[1],lt[2]))
-        self.__untestpool.union(pool)
+        self.__untestpool=self.__untestpool.union(pool)
+        return self.__untestpool        
         
   
 
