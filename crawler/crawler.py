@@ -50,6 +50,9 @@ class Crawler:
         self.spider=spider
         self.read_timeout=5.0
         self.conn_timeout=2.0
+        self.agent=None
+        self.proxy_pool=None
+        self.client=None
 
     def make_config(self, use_agent=False,use_proxy=False,agent=None,proxy_pool=[]):
         """
@@ -60,16 +63,28 @@ class Crawler:
         """
         if use_agent:
             if agent:
-                self.agent=agent
+                if isinstance(agent,dict):
+                    self.agent=list(agent)
             else:
                 self.agent=http_agent
         if use_proxy:
             self.proxy_pool=proxy_pool
 
 
-    async def __fetch(self,client, url,headers=None,proxy=None):
-        async with client.get(url,headers=headers,proxy=proxy) as response:
+    async def __fetch(self,url,headers=None,proxy=None):
+        async with self.client.get(url,headers=headers,proxy=proxy) as response:
             return await response.text()
 
+    async def __work(self,url):
+        headers=random.choice(self.agent) if self.agent else None
+        proxy=random.choice(self.proxy_pool) if self.proxy_pool else None
+        html=await self.__fetch(url,headers=headers,proxy=proxy)
+        result=await self.spider.parse(html)
+
     def run(self):
-        pass
+        self.client=ClientSession(read_timeout=self.read_timeout,conn_timeout=self.conn_timeout)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.__work(self.spider.urls[0]))
+        loop.run_until_complete(asyncio.sleep(0))
+        loop.close()
+        self.client.close()
