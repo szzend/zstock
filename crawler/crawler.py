@@ -4,6 +4,7 @@
 """
 import asyncio 
 from aiohttp import ClientSession
+import random
 
 http_agent=[
     {
@@ -43,9 +44,32 @@ http_agent=[
 
 class Crawler:
     """
+    实现调度及行为控制
     """
     def __init__(self,spider):
-        pass
-        
+        self.spider=spider
+        self.read_timeout=5.0
+        self.conn_timeout=2.0
+
+    def make_config(self, use_agent=False,use_proxy=False,agent=None,proxy_pool=[]):
+        """
+        参数:   use_agent 参数类型为布尔，指定是否设置请求头
+                use_proxy 参数类型为布尔，指定是否使用代理服务器
+                agent 参数类型为字典或字典列表，设置请求头，为字典列表时每次请求随机使用
+                proxy_pool参数类型为列表，指定将使用的代理池
+        """
+        if use_agent:
+            if agent:
+                self.agent=agent
+            else:
+                self.agent=http_agent
+        if use_proxy:
+            self.proxy_pool=proxy_pool
+
+
+    async def __fetch(self,client, url,headers=None,proxy=None):
+        async with client.get(url,headers=headers,proxy=proxy) as response:
+            return await response.text()
+
     def run(self):
         pass
