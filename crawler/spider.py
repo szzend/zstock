@@ -2,6 +2,7 @@
 """
 此模块用于提取分析
 """
+
 class Spider:
     """
     用于爬虫基类
@@ -14,48 +15,37 @@ class HtmlSpider(Spider):
     
 
     """
-    def __init__(self,urls=[]):
-        self.urls=urls
-        self.pipeline=[]
-
+    def __init__(self,start_urls=[]):
+        self.__urls=start_urls
+        
+        
     @property
     def urls(self):
         return self.__urls
 
-    @urls.setter
-    def urls(self,value):
-        """
-        value必须为列表
-        """
-        try:
-            self.__urls=list(set(self.make_urls()+value))
-        except NotImplementedError:
-            self.__urls=value
+        
     
-    def make_urls(self):
+    async def start_urls(self):
         """
-        用于生成要分析的urls,此方法非必须，
-        如果提供则与初始化时提供的开始urls合并
+        生成要抓取的urls,
+        用于向crawler提供初始请求的urls
         返回：urls列表
         """
-        raise NotImplementedError
+        return self.urls
 
-    def extract(self,response):
+    async def process_links(self,response):
         """
-        用于提取需要继续爬取的url
-        返回：url列表或空
+        被crawler调用，用于提取并处理页面中的urls
+        返回：需要被crawler处理的urls列表
         """
-        raise NotImplementedError
-    
-    def parse(self,response):
+        pass
+
+
+    async def parse_item(self,response):
         """
-        用于提取内容
+        被crawler调用，用于提取需要的内容
         返回：任意对象
         """
         raise NotImplementedError
 
-    def add_pipeline(self,pipe):
-        """
-        添加pipe对象到处理管线
-        """
-        self.pipeline.append(pipe)
+    

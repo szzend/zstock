@@ -1,10 +1,13 @@
 #coding: utf-8
 """
 此模块实现爬取，调度及辅助工具
+
 """
 import asyncio 
 from aiohttp import ClientSession
 import random
+import multiprocessing
+import os
 
 http_agent=[
     {
@@ -46,8 +49,7 @@ class Crawler:
     """
     实现调度及行为控制
     """
-    def __init__(self,spider):
-        self.spider=spider
+    def __init__(self):
         self.read_timeout=5.0
         self.conn_timeout=2.0
         self.agent=None
@@ -70,21 +72,60 @@ class Crawler:
         if use_proxy:
             self.proxy_pool=proxy_pool
 
+    def __add_urls(self,urls):
+        print("from __add_urls")
+        print(urls)
 
-    async def __fetch(self,url,headers=None,proxy=None):
-        async with self.client.get(url,headers=headers,proxy=proxy) as response:
-            return await response.text()
-
-    async def __work(self,url):
+    async def __fetch(self,client,url,headers=None,proxy=None):
+        print('from __fetch..')
+        async with client.get(url,headers=headers,proxy=proxy) as response:
+            #return await response.text()
+            return response
+    async def __request(self,client,url):
+        print('from __request..')
         headers=random.choice(self.agent) if self.agent else None
         proxy=random.choice(self.proxy_pool) if self.proxy_pool else None
-        html=await self.__fetch(url,headers=headers,proxy=proxy)
-        result=await self.spider.parse(html)
+        html=await self.__fetch(client,url,headers=headers,proxy=proxy)
+        results=await asyncio.gather(asyncio.ensure_future(self.__spider.process_links(html)),
+        asyncio.ensure_future(self.__spider.parse_item(html)))
+        self.__add_urls(results[0])
 
-    def run(self):
-        self.client=ClientSession(read_timeout=self.read_timeout,conn_timeout=self.conn_timeout)
+        
+
+    async def __work(self,urls):
+        print('from __work..')
+        async with ClientSession(read_timeout=self.read_timeout,conn_timeout=self.conn_timeout) as client:
+            tasks=[asyncio.ensure_future(self.__request(client,url)) for url in urls]
+            return await asyncio.gather(*tasks)
+
+    async def __dispatch(self):
+        threshold=100   #阈值，超过此任务数则开启多进程
+        urls=await self.__spider.start_urls()
+        num=len(urls)
+        print(num)
+        if num>threshold:
+            count=multiprocessing.cpu_count()
+            p = multiprocessing.Pool()
+            for i in range(count):
+                _=urls[i*num//count:(i+1)*num//count]
+                p.apply_async(self.start,(_,),)     #此处参数传值注意
+            p.close()
+            p.join()
+
+    def start(self,urls,spider=None):
+        if not spider:
+            print(os.getpid())
+            loop = asyncio.get_event_loop()
+            print(loop)
+            loop.run_until_complete(self.__work(urls))
+            loop.run_until_complete(asyncio.sleep(0))
+            loop.close()
+        else:
+            self.run(spider)
+
+    def run(self,spider):
+        self.__spider=spider
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.__work(self.spider.urls[0]))
+        loop.run_until_complete(self.__dispatch())
         loop.run_until_complete(asyncio.sleep(0))
         loop.close()
-        self.client.close()
