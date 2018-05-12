@@ -115,11 +115,13 @@ class Crawler:
     def start(self,urls,spider=None):
         if not spider:
             print(os.getpid())
-            loop = asyncio.get_event_loop()
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             print(loop)
+            print(loop.__hash__())
             loop.run_until_complete(self.__work(urls))
             loop.run_until_complete(asyncio.sleep(0))
-            loop.close()
+            loop.close() 
         else:
             self.run(spider)
 

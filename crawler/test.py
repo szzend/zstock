@@ -1,16 +1,17 @@
 from .spider import HtmlSpider
 from .crawler import Crawler
 import asyncio
+import os
 class  mySpider(HtmlSpider):
     async def parse_item(self,response):
-        print("ready to print response")
+        print(f"ready to print response:{os.getpid()}")
         await asyncio.sleep(2)
-        print(response)
+        print(os.getpid(),response)
         
     async def process_links(self,response):
-        print("process_links,before ..")
+        print(f"process_links,before ..{os.getpid()}")
         await asyncio.sleep(5)
-        print("process_links,back..")
+        print(f"process_links,back..{os.getpid()}")
         return ['http://result']
 
     async def start_urls(self):
