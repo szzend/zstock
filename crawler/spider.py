@@ -23,6 +23,10 @@ class HtmlSpider(Spider):
     def urls(self):
         return self.__urls
 
+    @urls.setter
+    def urls(self,value):
+        self.__urls=value
+
         
     
     async def start_urls(self):

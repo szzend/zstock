@@ -4,10 +4,11 @@
 
 """
 import asyncio 
-from aiohttp import ClientSession
+from aiohttp import ClientSession,ServerTimeoutError
 import random
 import multiprocessing
 import os
+
 
 http_agent=[
     {
@@ -75,35 +76,45 @@ class Crawler:
     def __add_urls(self,urls):
         print("from __add_urls")
         print(urls)
-
+    def __add_item(self,item):
+        print("from __add_item")
+        print(item)
     async def __fetch(self,client,url,headers=None,proxy=None):
         print('from __fetch..')
-        async with client.get(url,headers=headers,proxy=proxy) as response:
-            #return await response.text()
-            return response
+        try:
+            async with client.get(url,headers=headers,proxy=proxy) as response:
+                #return await response.text()
+                return response
+        except ServerTimeoutError as err:
+            print(err)
     async def __request(self,client,url):
         print('from __request..')
         headers=random.choice(self.agent) if self.agent else None
+        print(headers)
         proxy=random.choice(self.proxy_pool) if self.proxy_pool else None
-        html=await self.__fetch(client,url,headers=headers,proxy=proxy)
-        results=await asyncio.gather(asyncio.ensure_future(self.__spider.process_links(html)),
-        asyncio.ensure_future(self.__spider.parse_item(html)))
-        self.__add_urls(results[0])
+        #限制并发数
+        LIMIT_REQUESTS=100
+        async with asyncio.Semaphore(LIMIT_REQUESTS):
+            html=await self.__fetch(client,url,headers=headers,proxy=proxy)
+            results=await asyncio.gather(asyncio.ensure_future(self.__spider.process_links(html)),
+            asyncio.ensure_future(self.__spider.parse_item(html)))
+            self.__add_urls(results[0])
+            self.__add_item(results[1])
 
         
 
     async def __work(self,urls):
-        print('from __work..')
         async with ClientSession(read_timeout=self.read_timeout,conn_timeout=self.conn_timeout) as client:
             tasks=[asyncio.ensure_future(self.__request(client,url)) for url in urls]
             return await asyncio.gather(*tasks)
 
-    async def __dispatch(self):
-        threshold=100   #阈值，超过此任务数则开启多进程
+    async def __dispatch(self,use_mulp=True):
         urls=await self.__spider.start_urls()
+        urls=list(set(urls+self.__spider.urls))
         num=len(urls)
-        print(num)
-        if num>threshold:
+        print(urls)
+        threshold=100   #阈值，超过此任务数则开启多进程
+        if use_mulp and num>threshold:
             count=multiprocessing.cpu_count()
             p = multiprocessing.Pool()
             for i in range(count):
@@ -111,6 +122,8 @@ class Crawler:
                 p.apply_async(self.start,(_,),)     #此处参数传值注意
             p.close()
             p.join()
+        else:
+            await self.__work(urls)
 
     def start(self,urls,spider=None):
         if not spider:
@@ -125,9 +138,12 @@ class Crawler:
         else:
             self.run(spider)
 
-    def run(self,spider):
+    def run(self,spider,use_mulp=True):
+        import time
+        t0=time.time()
         self.__spider=spider
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.__dispatch())
+        loop.run_until_complete(self.__dispatch(use_mulp))
         loop.run_until_complete(asyncio.sleep(0))
-        loop.close()
+        #loop.close()
+        print(f'消耗时间为：{time.time()-t0}')
