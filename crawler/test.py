@@ -1,8 +1,8 @@
-from .spider import HtmlSpider
+from .parser import HtmlParser
 from .crawler import Crawler
 import asyncio
 import os
-class  mySpider(HtmlSpider):
+class  mySpider(HtmlParser):
     async def parse_item(self,response):
         print(f"ready to print response:{os.getpid()}")
         return response

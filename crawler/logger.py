@@ -1,7 +1,7 @@
 #coding: utf-8
-class pipe:
+class logger:
     """
-    用于pipeline处理数据
+    用于记录抓取过程
     """
     def process(self,item):
         """
