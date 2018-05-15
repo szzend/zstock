@@ -8,6 +8,7 @@ from aiohttp import ClientSession,ServerTimeoutError
 import random
 import multiprocessing
 import os
+from .logger import Logger
 
 
 http_agent=[
@@ -56,6 +57,7 @@ class Crawler:
         self.agent=None
         self.proxy_pool=None
         self.client=None
+        self.logger=Logger()
 
     def make_config(self, use_agent=False,use_proxy=False,agent=None,proxy_pool=[]):
         """
@@ -74,21 +76,19 @@ class Crawler:
             self.proxy_pool=proxy_pool
 
     def __add_urls(self,urls):
-        print("from __add_urls")
-        print(urls)
+        pass
     def __add_item(self,item):
-        print("from __add_item")
-        print(item)
+        pass
     async def __fetch(self,client,url,headers=None,proxy=None):
         print('from __fetch..')
         try:
             async with client.get(url,headers=headers,proxy=proxy) as response:
                 #return await response.text()
+                self.logger.info(str(response))
                 return response
         except ServerTimeoutError as err:
-            print(err)
+            self.logger.error(str(err))
     async def __request(self,client,url):
-        print('from __request..')
         headers=random.choice(self.agent) if self.agent else None
         print(headers)
         proxy=random.choice(self.proxy_pool) if self.proxy_pool else None
@@ -112,7 +112,6 @@ class Crawler:
         urls=await self.__spider.start_urls()
         urls=list(set(urls+self.__spider.urls))
         num=len(urls)
-        print(urls)
         threshold=100   #阈值，超过此任务数则开启多进程
         if use_mulp and num>threshold:
             count=multiprocessing.cpu_count()
@@ -126,6 +125,7 @@ class Crawler:
             await self.__work(urls)
 
     def start(self,urls,spider=None):
+        print(spider)
         if not spider:
             print(os.getpid())
             loop = asyncio.new_event_loop()
@@ -138,12 +138,13 @@ class Crawler:
         else:
             self.run(spider)
 
-    def run(self,spider,use_mulp=True):
-        import time
-        t0=time.time()
+    def run(self,spider,use_mulp=True,debug=False):
         self.__spider=spider
         loop = asyncio.get_event_loop()
+        self.logger.debug=debug
+        self.logger.start()
         loop.run_until_complete(self.__dispatch(use_mulp))
         loop.run_until_complete(asyncio.sleep(0))
         #loop.close()
-        print(f'消耗时间为：{time.time()-t0}')
+        self.logger.stop()
+        print(self.logger.report())

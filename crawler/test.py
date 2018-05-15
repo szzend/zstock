@@ -8,10 +8,7 @@ class  mySpider(HtmlParser):
         return response
         
     async def process_links(self,response):
-        print(f"process_links,before ..{os.getpid()}")
-        await asyncio.sleep(5)
-        print(f"process_links,back..{os.getpid()}")
-        return ['http://result']
+        pass
 
     async def start_urls(self):
         urls=['https://baidu.com','http://www.sohu.com/']

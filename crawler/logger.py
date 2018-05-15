@@ -3,20 +3,10 @@
 from multiprocessing import Queue
 from logging.handlers import QueueListener,QueueHandler,TimedRotatingFileHandler
 import logging
+import sys
 from collections import defaultdict
-
-
-
-
-lg=logging.getLogger(__name__)
-q=Queue()
-qh=QueueHandler(q)
-lg.addHandler(qh)
-#fh=TimedRotatingFileHandler('log.txt')
-h1=listener()
-ler=QueueListener(q,h1)
-
-
+from .settings import Settings
+import time
 
 
 class Logger:
@@ -45,7 +35,8 @@ class Logger:
             return s
 
         def result(self):
-            return self.__result
+            if self.__save_result:
+                return self.__result
 
     def __init__(self,debug=False):
         """
@@ -53,23 +44,46 @@ class Logger:
         """
         self.debug=debug
         self.__q=Queue()
+        self.__counter=None
+        self.__file_handler=TimedRotatingFileHandler('crawler.log',when='D',interval=3,encoding='utf-8')
+        self.__stdout=logging.StreamHandler(sys.stdout)
+        self.__qh=QueueHandler(self.__q)
+        self.__logger=logging.getLogger('logger.Logger')
+        self.__logger.setLevel(20)
+        self.__listener=None
+        self.__time=None
 
-    def start(self):
-        pass
 
+
+    def start(self,save_result=True):
+        self.__logger.addHandler(self.__qh)
+        self.__counter=self.CounterHandler(save_result)
+        if self.debug:
+            self.__logger.addHandler(self.__stdout)
+            self.__listener=QueueListener(self.__q,self.__counter)
+        else:
+            self.__listener=QueueListener(self.__q,self.__counter,self.__file_handler)
+        self.__listener.start()
+        self.__time=time.time()
     def stop(self):
-        pass
+        self.__time=time.time()-self.__time
+        self.__listener.stop()
+        self.__logger.handlers=[]
+        self.__listener.handlers=[]
 
-    def info(self):
-        raise NotImplementedError
+    def info(self,msg, *args, **kwargs):
+        self.__logger.info(msg,*args, **kwargs)
 
-    def warning(self):
-        pass
+    def warning(self,msg,*args, **kwargs):
+        self.__logger.warning(msg,*args, **kwargs)
 
-    def error(self):
-        pass
+    def error(self,msg,*args, **kwargs):
+        self.__logger.error(msg,*args, **kwargs)
 
     def report(self):
-        pass
+        return f'运行时间：{self.__time}.\n{self.__counter.report()}'
+        
+    def result(self):
+        return self.__counter.result()
 
      
