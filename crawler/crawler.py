@@ -9,6 +9,7 @@ import random
 import multiprocessing
 import os
 from .logger import Logger
+from .settings import Settings
 
 
 http_agent=[
@@ -46,6 +47,10 @@ http_agent=[
         'Accept-Encoding': 'gzip, deflate',
     }
 ]
+__logger__=Logger()
+
+def getlog():
+    return __logger__
 
 class Crawler:
     """
@@ -57,7 +62,7 @@ class Crawler:
         self.agent=None
         self.proxy_pool=None
         self.client=None
-        self.logger=Logger()
+        
 
     def make_config(self, use_agent=False,use_proxy=False,agent=None,proxy_pool=[]):
         """
@@ -84,13 +89,13 @@ class Crawler:
         try:
             async with client.get(url,headers=headers,proxy=proxy) as response:
                 #return await response.text()
-                self.logger.info(str(response))
+                getlog().info(str(response))
                 return response
         except ServerTimeoutError as err:
-            self.logger.error(str(err))
+            getlog().error(str(err))
     async def __request(self,client,url):
         headers=random.choice(self.agent) if self.agent else None
-        print(headers)
+        #print(headers)
         proxy=random.choice(self.proxy_pool) if self.proxy_pool else None
         #限制并发数
         LIMIT_REQUESTS=100
@@ -112,6 +117,7 @@ class Crawler:
         urls=await self.__spider.start_urls()
         urls=list(set(urls+self.__spider.urls))
         num=len(urls)
+        print(urls)
         threshold=100   #阈值，超过此任务数则开启多进程
         if use_mulp and num>threshold:
             count=multiprocessing.cpu_count()
@@ -123,9 +129,7 @@ class Crawler:
             p.join()
         else:
             await self.__work(urls)
-
     def start(self,urls,spider=None):
-        print(spider)
         if not spider:
             print(os.getpid())
             loop = asyncio.new_event_loop()
@@ -141,10 +145,10 @@ class Crawler:
     def run(self,spider,use_mulp=True,debug=False):
         self.__spider=spider
         loop = asyncio.get_event_loop()
-        self.logger.debug=debug
-        self.logger.start()
+        getlog().debug=debug
+        getlog().start()
         loop.run_until_complete(self.__dispatch(use_mulp))
         loop.run_until_complete(asyncio.sleep(0))
         #loop.close()
-        self.logger.stop()
-        print(self.logger.report())
+        getlog().stop()
+        print(getlog().report())

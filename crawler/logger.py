@@ -52,6 +52,7 @@ class Logger:
         self.__logger.setLevel(20)
         self.__listener=None
         self.__time=None
+        
 
 
 
